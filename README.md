@@ -1,6 +1,6 @@
 # 🔄 Kommo-n8n Integration
 
-> **📦 Repositório**: [https://github.com/RaquelFonsec/Kommo-n8n-integration](https://github.com/RaquelFonsec/Kommo-n8n-integration)
+
 
 ## 📋 Sobre o Projeto
 
@@ -10,7 +10,7 @@ Sistema de integração entre **Kommo CRM** e **n8n** para automação de atendi
 
 ### 🤖 **Agente Inteligente Automatizado**
 - **Primeira linha de atendimento**: Responde dúvidas simples e coleta informações
-- **Pré-qualificação de leads**: Identifica advogados com perfil adequado
+- **Pré-qualificação de leads**: Identifica leads com perfil adequado
 - **Triagem automática**: Filtra leads relevantes vs. não relevantes
 - **Escalonamento controlado**: Permite intervenção humana quando necessário
 
@@ -21,7 +21,7 @@ Sistema de integração entre **Kommo CRM** e **n8n** para automação de atendi
 4. **n8n retorna resposta** → Python envia para Kommo
 5. **Kommo envia para WhatsApp** → Cliente recebe resposta
 
-### 🎮 **Controle do Bot**
+###  **Controle do Bot**
 - **Pausar/Reativar**: Controle manual do bot por contato
 - **Comandos especiais**: `#pausar`, `#voltar`, `#status`
 - **Status em tempo real**: Verificação do estado do bot
@@ -114,7 +114,7 @@ DEBUG=true
 ENVIRONMENT=development
 ```
 
-## 🏃‍♂️ Execução
+##  Execução
 
 ### **Desenvolvimento**
 ```bash
@@ -137,26 +137,26 @@ sudo systemctl enable kommo-n8n-integration
 
 ## 🌐 Endpoints da API
 
-### **📊 Status e Saúde**
+### ** Status e Saúde**
 - `GET /` - Status da aplicação
 - `GET /health` - Verificação de saúde
 - `GET /config` - Configurações carregadas
 
-### **🔗 Webhooks**
+### ** Webhooks**
 - `POST /webhooks/kommo` - Recebe webhooks do Kommo
 - `POST /send-response` - Recebe respostas do n8n
 
-### **🤖 Controle do Bot**
+### ** Controle do Bot**
 - `GET /bot/status/{contact_id}` - Status do bot para contato
 - `POST /bot/pause/{contact_id}` - Pausar bot para contato
 - `POST /bot/resume/{contact_id}` - Reativar bot para contato
 - `POST /bot/command` - Comandos do bot via API
 
-### **🔐 OAuth**
+### ** OAuth**
 - `GET /oauth/callback` - Callback OAuth do Kommo
 - `GET /oauth/status` - Status da autenticação
 
-## 🔧 Configuração Externa
+##  Configuração Externa
 
 ### **Kommo CRM**
 1. **Webhook**: Configure para `https://seu-dominio.com/webhooks/kommo`
@@ -177,7 +177,7 @@ sudo systemctl enable kommo-n8n-integration
 }
 ```
 
-## 📊 Monitoramento
+##  Monitoramento
 
 ### **Logs**
 - **Localização**: `logs/` diretório
@@ -194,7 +194,7 @@ sudo systemctl enable kommo-n8n-integration
 - **Kommo erro**: Notificação de erros de API
 - **Bot pausado**: Status de contatos com bot pausado
 
-## 🛠️ Desenvolvimento
+##  Desenvolvimento
 
 ### **Estrutura de Código**
 ```python
@@ -220,7 +220,7 @@ app/routes/
 - **Tratamento de erros**: Try/catch em todas as operações críticas
 - **Validação**: Pydantic para validação de dados
 
-## 🔒 Segurança
+##  Segurança
 
 ### **Autenticação**
 - **Kommo**: OAuth2 com refresh token
@@ -232,7 +232,7 @@ app/routes/
 - **Rate limiting**: Proteção contra spam
 - **CORS**: Configurado para origens específicas
 
-## 🚀 Deploy em Produção
+##  Deploy em Produção
 
 ### **1. Servidor**
 ```bash
@@ -282,7 +282,7 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 ### **Problemas Comuns**
 
@@ -325,25 +325,13 @@ grep "webhook" logs/app-$(date +%Y%m%d).log
 grep "n8n" logs/app-$(date +%Y%m%d).log
 ```
 
-## 📞 Suporte
 
 ### **Contatos**
 - **Desenvolvedor**: Raquel Fonseca
-- **Email**: [raquel@dominio.com]
-- **Telefone**: [seu-telefone]
+- **Email**: [raquel.promptia@gmail.com.com]
 
-### **Documentação Adicional**
-- **Kommo API**: https://kommo.com/developers
-- **n8n Docs**: https://docs.n8n.io
-- **FastAPI**: https://fastapi.tiangolo.com
+
 
 ## 📄 Licença
 
 Este projeto é proprietário da **Previdas**. Todos os direitos reservados.
-
----
-
-**Versão**: 1.0.0  
-**Última atualização**: Agosto 2024  
-**Status**: ✅ Pronto para Produção  
-**Repositório**: [https://github.com/RaquelFonsec/Kommo-n8n-integration](https://github.com/RaquelFonsec/Kommo-n8n-integration)
