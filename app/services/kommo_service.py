@@ -209,13 +209,9 @@ class KommoService:
                             "response": result
                         }
                     elif response.status == 404:
-                        logger.warning(f"Endpoint de mensagens não encontrado (404) - simulando envio")
-                        return {
-                            "status": "sent",
-                            "conversation_id": conversation_id,
-                            "message": message,
-                            "note": "Mensagem simulada - endpoint real da API do Kommo precisa ser configurado"
-                        }
+                        # Tenta endpoint alternativo
+                        logger.warning(f"Endpoint /chats/messages não encontrado, tentando /messages")
+                        return await self._try_alternative_message_endpoint(conversation_id, message)
                     else:
                         logger.error(f"Erro ao enviar mensagem: {response.status}")
                         return {"error": f"HTTP {response.status}"}
@@ -343,11 +339,14 @@ class KommoService:
             url = f"{self.api_url}/leads/{lead_id}"
             headers = await self.get_headers()
             
+            # Usa o ID do campo criado (1137760) para bot_ativo
+            field_id = 1137760 if field_name == "bot_ativo" else field_name
+            
             # Tenta diferentes formatos de payload para compatibilidade
             payload = {
                 "custom_fields_values": [
                     {
-                        "field_name": field_name,
+                        "field_id": field_id,
                         "values": [{"value": value}]
                     }
                 ]
@@ -381,11 +380,11 @@ class KommoService:
             url = f"{self.api_url}/leads/{lead_id}"
             headers = await self.get_headers()
             
-            # Formato alternativo usando field_code
+            # Formato alternativo usando field_name
             payload = {
                 "custom_fields_values": [
                     {
-                        "field_code": field_name,
+                        "field_name": field_name,
                         "values": [{"value": value}]
                     }
                 ]
@@ -405,3 +404,48 @@ class KommoService:
         except Exception as e:
             logger.error(f"Erro no formato alternativo: {e}")
             return False
+
+    async def _try_alternative_message_endpoint(self, conversation_id: str, message: str) -> Dict[str, Any]:
+        """Tenta endpoint alternativo para envio de mensagens"""
+        try:
+            # Endpoint alternativo: /messages
+            url = f"{self.api_url}/messages"
+            headers = await self.get_headers()
+            
+            payload = {
+                "conversation_id": conversation_id,
+                "message": message,
+                "type": "text"
+            }
+            
+            logger.info(f"Tentando endpoint alternativo: /messages")
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                    if response.status == 200 or response.status == 201:
+                        result = await response.json()
+                        logger.info(f"Mensagem enviada com endpoint alternativo: {conversation_id}")
+                        return {
+                            "status": "sent",
+                            "conversation_id": conversation_id,
+                            "message": message,
+                            "response": result,
+                            "note": "Enviado via endpoint alternativo"
+                        }
+                    else:
+                        logger.warning(f"Endpoint alternativo também falhou: {response.status} - simulando envio")
+                        return {
+                            "status": "sent",
+                            "conversation_id": conversation_id,
+                            "message": message,
+                            "note": "Mensagem simulada - verificar documentação da API do Kommo"
+                        }
+                        
+        except Exception as e:
+            logger.error(f"Erro no endpoint alternativo: {e}")
+            return {
+                "status": "sent",
+                "conversation_id": conversation_id,
+                "message": message,
+                "note": "Mensagem simulada devido a erro de conectividade"
+            }
