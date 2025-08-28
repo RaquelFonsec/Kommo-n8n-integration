@@ -27,6 +27,44 @@ Sistema de integração entre **Kommo CRM** e **n8n** para automação de atendi
 - **Status em tempo real**: Verificação do estado do bot
 - **Handoff suave**: Transição para vendedor humano
 
+- Como o Vendedor Usa os Comandos no WhatsApp
+Cenário Típico de Atendimento
+1. Cliente inicia conversa:
+👤 Cliente: "Olá, quero saber sobre o produto X"
+🤖 Bot: "Olá! Sou o assistente virtual. Posso te ajudar com o produto X..."
+👤 Cliente: "Preciso de mais detalhes"
+🤖 Bot: "Claro! O produto X tem as seguintes características..."
+👤 Cliente: "Quero falar com um vendedor"
+�� Bot: "Vou transferir você para um vendedor especializado..."
+
+Vendedor assume a conversa:
+�� Vendedor: "#pausar"
+�� Sistema: "🤖 Bot pausado. Vendedor assumindo conversa."
+
+👤 Cliente: "Olá, ainda está aí?"
+💼 Vendedor: "Olá! Sou o João, vendedor especializado. Como posso te ajudar?"
+👤 Cliente: "Quero comprar o produto X"
+💼 Vendedor: "Perfeito! Vou te passar todas as informações..."
+
+
+Vendedor termina e reativa o bot:
+
+💼 Vendedor: "Perfeito! Vou te enviar a proposta por email."
+�� Cliente: "Obrigado!"
+�� Vendedor: "#voltar"
+🤖 Sistema: "�� Bot reativado. Assumindo atendimento automático."
+
+👤 Cliente: "Tenho mais uma dúvida"
+🤖 Bot: "Olá! Como posso te ajudar?"
+
+
+Comandos Disponíveis
+Comando	O que faz	Quando usar
+#pausar	Pausa o bot	Quando quer assumir a conversa
+#voltar	Reativa o bot	Quando termina o atendimento
+#status	Mostra status	Para ver se o bot está ativo
+#help	Mostra ajuda	Para ver todos os comandos
+
 ## 🏗️ Arquitetura
 
 ```
