@@ -18,6 +18,15 @@ from app.services.n8n_service import N8nService
 # Importar routers
 from app.routes import oauth
 
+# Importar modelos Pydantic
+from app.models.kommo_models import (
+    N8nResponse, 
+    BotCommand, 
+    WebhookResponse, 
+    BotStatusResponse, 
+    TestResponse
+)
+
 load_dotenv()
 
 # Setup básico de logging
@@ -60,7 +69,7 @@ async def health_check():
         "timestamp": datetime.now().isoformat()
     }
 
-@app.post("/webhooks/kommo")
+@app.post("/webhooks/kommo", response_model=WebhookResponse)
 async def receive_kommo_webhook(
     request: Request,
     background_tasks: BackgroundTasks
@@ -70,58 +79,68 @@ async def receive_kommo_webhook(
         webhook_data = await request.json()
         logger.info(f"📥 Webhook recebido do Kommo: {webhook_data}")
         
-        # Processar webhook em background
         processor = WebhookProcessor()
         background_tasks.add_task(
             processor.process_webhook, 
             webhook_data
         )
         
-        return {
-            "status": "received", 
-            "message": "Webhook recebido e sendo processado",
-            "timestamp": datetime.now().isoformat()
-        }
+        return WebhookResponse(
+            status="received", 
+            message="Webhook recebido e sendo processado",
+            timestamp=datetime.now().isoformat()
+        )
         
     except Exception as e:
         logger.error(f"❌ Erro ao processar webhook: {e}")
-        return {"status": "error", "message": str(e)}
+        return WebhookResponse(
+            status="error", 
+            message=str(e),
+            timestamp=datetime.now().isoformat()
+        )
 
-@app.post("/send-response")
-async def receive_n8n_response(request: Request):
+@app.post("/send-response", response_model=WebhookResponse)
+async def receive_n8n_response(response_data: N8nResponse):
     """Recebe resposta do n8n e envia para Kommo"""
     try:
-        response_data = await request.json()
-        logger.info(f"🤖 Resposta recebida do n8n: {response_data}")
+        logger.info(f"🤖 Resposta recebida do n8n: {response_data.dict()}")
         
-        conversation_id = response_data.get("conversation_id")
-        response_text = response_data.get("response")
-        should_send = response_data.get("should_send", True)
-        
-        if should_send and conversation_id and response_text:
+        if response_data.should_send and response_data.conversation_id and response_data.response:
             kommo = KommoService()
-            result = await kommo.send_message(conversation_id, response_text)
+            result = await kommo.send_message(response_data.conversation_id, response_data.response)
             
             if "error" not in result:
-                logger.info(f"✅ Resposta enviada com sucesso para: {conversation_id}")
-                return {
-                    "status": "sent",
-                    "conversation_id": conversation_id,
-                    "message": "Resposta enviada para Kommo"
-                }
+                logger.info(f"✅ Resposta enviada com sucesso para: {response_data.conversation_id}")
+                return WebhookResponse(
+                    status="sent",
+                    message="Resposta enviada para Kommo",
+                    timestamp=datetime.now().isoformat()
+                )
             else:
                 logger.error(f"❌ Erro ao enviar resposta: {result['error']}")
-                return {"status": "error", "message": result['error']}
+                return WebhookResponse(
+                    status="error", 
+                    message=result['error'],
+                    timestamp=datetime.now().isoformat()
+                )
         else:
             logger.info("⏭️ Resposta não enviada (should_send=False ou dados incompletos)")
-            return {"status": "skipped", "message": "Resposta não enviada"}
+            return WebhookResponse(
+                status="skipped", 
+                message="Resposta não enviada",
+                timestamp=datetime.now().isoformat()
+            )
             
     except Exception as e:
         logger.error(f"❌ Erro ao processar resposta do n8n: {e}")
-        return {"status": "error", "message": str(e)}
+        return WebhookResponse(
+            status="error", 
+            message=str(e),
+            timestamp=datetime.now().isoformat()
+        )
 
 # Endpoints para controle manual do bot
-@app.post("/bot/pause/{contact_id}")
+@app.post("/bot/pause/{contact_id}", response_model=WebhookResponse)
 async def pause_bot(contact_id: int):
     """Pausa o bot para um contato específico"""
     try:
@@ -130,11 +149,11 @@ async def pause_bot(contact_id: int):
         
         if success:
             logger.info(f"⏸️ Bot pausado manualmente para contato {contact_id}")
-            return {
-                "status": "success",
-                "message": f"Bot pausado para contato {contact_id}",
-                "contact_id": contact_id
-            }
+            return WebhookResponse(
+                status="success",
+                message=f"Bot pausado para contato {contact_id}",
+                timestamp=datetime.now().isoformat()
+            )
         else:
             logger.error(f"❌ Erro ao pausar bot para contato {contact_id}")
             raise HTTPException(status_code=500, detail="Erro ao pausar bot")
@@ -143,7 +162,7 @@ async def pause_bot(contact_id: int):
         logger.error(f"❌ Erro ao pausar bot: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/bot/resume/{contact_id}")
+@app.post("/bot/resume/{contact_id}", response_model=WebhookResponse)
 async def resume_bot(contact_id: int):
     """Reativa o bot para um contato específico"""
     try:
@@ -151,21 +170,21 @@ async def resume_bot(contact_id: int):
         success = await kommo.resume_bot(contact_id)
         
         if success:
-            logger.info(f"▶️ Bot reativado manualmente para contato {contact_id}")
-            return {
-                "status": "success",
-                "message": f"Bot reativado para contato {contact_id}",
-                "contact_id": contact_id
-            }
+            logger.info(f" Bot reativado manualmente para contato {contact_id}")
+            return WebhookResponse(
+                status="success",
+                message=f"Bot reativado para contato {contact_id}",
+                timestamp=datetime.now().isoformat()
+            )
         else:
-            logger.error(f"❌ Erro ao reativar bot para contato {contact_id}")
+            logger.error(f" Erro ao reativar bot para contato {contact_id}")
             raise HTTPException(status_code=500, detail="Erro ao reativar bot")
             
     except Exception as e:
-        logger.error(f"❌ Erro ao reativar bot: {e}")
+        logger.error(f" Erro ao reativar bot: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/bot/status/{contact_id}")
+@app.get("/bot/status/{contact_id}", response_model=BotStatusResponse)
 async def get_bot_status(contact_id: int):
     """Retorna status do bot para um contato"""
     try:
@@ -173,47 +192,56 @@ async def get_bot_status(contact_id: int):
         status = await kommo.get_bot_status(contact_id)
         
         if "error" not in status:
-            logger.info(f"📊 Status consultado para contato {contact_id}")
-            return status
+            logger.info(f"Status consultado para contato {contact_id}")
+            return BotStatusResponse(**status)
         else:
-            logger.error(f"❌ Erro ao obter status para contato {contact_id}")
+            logger.error(f" Erro ao obter status para contato {contact_id}")
             raise HTTPException(status_code=500, detail="Erro ao obter status")
             
     except Exception as e:
-        logger.error(f"❌ Erro ao obter status do bot: {e}")
+        logger.error(f" Erro ao obter status do bot: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/bot/command")
-async def execute_bot_command(request: Request):
+@app.post("/bot/command", response_model=Dict[str, Any])
+async def execute_bot_command(command_data: BotCommand):
     """Executa comando do bot via API"""
     try:
-        data = await request.json()
-        contact_id = data.get("contact_id")
-        command = data.get("command", "").lower()
-        
-        if not contact_id:
-            raise HTTPException(status_code=400, detail="contact_id é obrigatório")
-        
         kommo = KommoService()
         
-        if command == "pause":
-            success = await kommo.pause_bot(contact_id)
+        if command_data.command == "pause":
+            success = await kommo.pause_bot(command_data.contact_id)
             message = "Bot pausado" if success else "Erro ao pausar bot"
-        elif command == "resume":
-            success = await kommo.resume_bot(contact_id)
+            return {
+                "status": "success" if success else "error",
+                "message": message,
+                "timestamp": datetime.now().isoformat(),
+                "command": "pause",
+                "contact_id": command_data.contact_id
+            }
+        elif command_data.command == "resume":
+            success = await kommo.resume_bot(command_data.contact_id)
             message = "Bot reativado" if success else "Erro ao reativar bot"
-        elif command == "status":
-            status = await kommo.get_bot_status(contact_id)
-            return status
+            return {
+                "status": "success" if success else "error",
+                "message": message,
+                "timestamp": datetime.now().isoformat(),
+                "command": "resume",
+                "contact_id": command_data.contact_id
+            }
+        elif command_data.command == "status":
+            status = await kommo.get_bot_status(command_data.contact_id)
+            if "error" not in status:
+                return {
+                    "status": "success",
+                    "command": "status",
+                    "contact_id": command_data.contact_id,
+                    "timestamp": datetime.now().isoformat(),
+                    "bot_status": status
+                }
+            else:
+                raise HTTPException(status_code=500, detail="Erro ao obter status")
         else:
             raise HTTPException(status_code=400, detail="Comando inválido. Use: pause, resume, status")
-        
-        return {
-            "status": "success" if success else "error",
-            "message": message,
-            "contact_id": contact_id,
-            "command": command
-        }
         
     except Exception as e:
         logger.error(f"❌ Erro ao executar comando: {e}")
@@ -239,30 +267,30 @@ async def show_config():
         "environment": os.getenv("ENVIRONMENT", "development")
     }
 
-@app.get("/test/n8n")
+@app.get("/test/n8n", response_model=TestResponse)
 async def test_n8n_connectivity():
     """Testa conectividade com o n8n"""
     try:
         n8n = N8nService()
         result = await n8n.test_connectivity()
         
-        logger.info(f"🔍 Teste de conectividade n8n: {result}")
-        return {
-            "test_type": "n8n_connectivity",
-            "timestamp": datetime.now().isoformat(),
+        logger.info(f" Teste de conectividade n8n: {result}")
+        return TestResponse(
+            test_type="n8n_connectivity",
+            timestamp=datetime.now().isoformat(),
             **result
-        }
+        )
         
     except Exception as e:
-        logger.error(f"❌ Erro no teste de conectividade n8n: {e}")
-        return {
-            "test_type": "n8n_connectivity",
-            "status": "error",
-            "message": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
+        logger.error(f" Erro no teste de conectividade n8n: {e}")
+        return TestResponse(
+            test_type="n8n_connectivity",
+            status="error",
+            message=str(e),
+            timestamp=datetime.now().isoformat()
+        )
 
-@app.get("/test/kommo")
+@app.get("/test/kommo", response_model=TestResponse)
 async def test_kommo_connectivity():
     """Testa conectividade com o Kommo"""
     try:
@@ -279,38 +307,38 @@ async def test_kommo_connectivity():
             status = "warning"
             message = "Kommo API acessível mas contato de teste não encontrado (normal)"
         
-        logger.info(f"🔍 Teste de conectividade Kommo: {status}")
-        return {
-            "test_type": "kommo_connectivity",
-            "status": status,
-            "message": message,
-            "test_contact_id": test_contact_id,
-            "contact_found": bool(contact),
-            "timestamp": datetime.now().isoformat()
-        }
+        logger.info(f" Teste de conectividade Kommo: {status}")
+        return TestResponse(
+            test_type="kommo_connectivity",
+            status=status,
+            message=message,
+            timestamp=datetime.now().isoformat(),
+            test_contact_id=test_contact_id,
+            contact_found=bool(contact)
+        )
         
     except Exception as e:
-        logger.error(f"❌ Erro no teste de conectividade Kommo: {e}")
-        return {
-            "test_type": "kommo_connectivity",
-            "status": "error",
-            "message": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
+        logger.error(f" Erro no teste de conectividade Kommo: {e}")
+        return TestResponse(
+            test_type="kommo_connectivity",
+            status="error",
+            message=str(e),
+            timestamp=datetime.now().isoformat()
+        )
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
     debug = os.getenv("DEBUG", "true").lower() == "true"
     
-    print(f"🚀 Iniciando Kommo-n8n Integration na porta {port}")
-    print(f"📖 Documentação: http://localhost:{port}/docs")
-    print(f"🔗 Webhook Kommo: http://localhost:{port}/webhooks/kommo")
-    print(f"🔗 Resposta n8n: http://localhost:{port}/send-response")
-    print(f"🤖 Controle Bot: http://localhost:{port}/bot/status/[contact_id]")
-    print(f"🔐 OAuth Status: http://localhost:{port}/oauth/status")
-    print(f"🧪 Teste n8n: http://localhost:{port}/test/n8n")
-    print(f"🧪 Teste Kommo: http://localhost:{port}/test/kommo")
+    print(f" Iniciando Kommo-n8n Integration na porta {port}")
+    print(f" Documentação: http://localhost:{port}/docs")
+    print(f" Webhook Kommo: http://localhost:{port}/webhooks/kommo")
+    print(f"Resposta n8n: http://localhost:{port}/send-response")
+    print(f" Controle Bot: http://localhost:{port}/bot/status/[contact_id]")
+    print(f" OAuth Status: http://localhost:{port}/oauth/status")
+    print(f" Teste n8n: http://localhost:{port}/test/n8n")
+    print(f" Teste Kommo: http://localhost:{port}/test/kommo")
     
     uvicorn.run(
         "app.main:app", 
