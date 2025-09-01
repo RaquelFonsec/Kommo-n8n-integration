@@ -3,10 +3,10 @@ version: '3.8'
 services:
   app:
     build: .
-    container_name: kommo-n8n-integration
+    container_name: kommo-n8n-integration-prod
     restart: unless-stopped
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - KOMMO_CLIENT_ID=${KOMMO_CLIENT_ID}
       - KOMMO_CLIENT_SECRET=${KOMMO_CLIENT_SECRET}
@@ -16,7 +16,7 @@ services:
       - N8N_API_KEY=${N8N_API_KEY}
       - LOG_LEVEL=INFO
     volumes:
-      - ./logs:/app/logs
+      - kommo_logs:/app/logs
     networks:
       - kommo-network
     healthcheck:
@@ -25,26 +25,44 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
 
   nginx:
     image: nginx:alpine
-    container_name: kommo-nginx
+    container_name: kommo-nginx-prod
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./ssl:/etc/nginx/ssl
-      - ./logs/nginx:/var/log/nginx
+      - kommo_ssl:/etc/nginx/ssl
+      - kommo_nginx_logs:/var/log/nginx
     depends_on:
       - app
     networks:
       - kommo-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
 
 networks:
   kommo-network:
     driver: bridge
 
 volumes:
-  logs:
+  kommo_logs:
+    driver: local
+  kommo_nginx_logs:
+    driver: local
+  kommo_ssl:
+    driver: local
