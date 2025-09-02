@@ -81,6 +81,22 @@ Comando	O que faz	Quando usar
        └───────────────────┴───────────────────┘
 ```
 
+## 🌐 URLs de Produção
+
+### **Servidor Principal:**
+- **Base URL:** `https://dashboard.previdas.com.br/api/kommo-n8n`
+
+### **Endpoints Principais:**
+- **Webhook Kommo:** `https://dashboard.previdas.com.br/api/kommo-n8n/webhooks/kommo`
+- **Resposta n8n:** `https://dashboard.previdas.com.br/api/kommo-n8n/send-response`
+- **Controle Bot:** `https://dashboard.previdas.com.br/api/kommo-n8n/bot/command`
+- **Status Bot:** `https://dashboard.previdas.com.br/api/kommo-n8n/bot/status/{contact_id}`
+- **OAuth:** `https://dashboard.previdas.com.br/api/kommo-n8n/oauth/callback`
+
+### **Configurações Externas:**
+- **Kommo Webhook:** Configure para disparar em "Lead adicionado"
+- **n8n Saída:** Configure para enviar respostas para o endpoint de resposta
+
 ## 📁 Estrutura do Projeto
 
 ```

@@ -6,7 +6,29 @@ from typing import Dict, Any
 router = APIRouter()
 logger = setup_logger(__name__)
 
-@router.post("/kommo")
+@router.post("/kommo",
+    summary="Recebe webhook do Kommo",
+    description="""
+    ### 📥 Endpoint para Webhook do Kommo
+    
+    **URL de Produção:** `https://dashboard.previdas.com.br/api/kommo-n8n/webhooks/kommo`
+    
+    Recebe webhooks do Kommo CRM quando novos leads são criados ou mensagens chegam.
+    
+    **Configuração no Kommo:**
+    - URL: `https://dashboard.previdas.com.br/api/kommo-n8n/webhooks/kommo`
+    - Evento: "Lead adicionado"
+    - Método: POST
+    - Content-Type: application/json
+    
+    **Fluxo:**
+    1. Kommo dispara webhook → Este endpoint
+    2. Python processa → Envia para n8n
+    3. n8n processa com IA → Retorna resposta
+    4. Python envia → WhatsApp via Kommo
+    """,
+    tags=["kommo", "webhook", "whatsapp"]
+)
 async def receive_kommo_webhook(
     webhook_data: Dict[Any, Any],
     background_tasks: BackgroundTasks
