@@ -33,7 +33,17 @@ app = FastAPI(
     contact={
         "name": "Previdas",
         "url": "https://dashboard.previdas.com.br"
-    }
+    },
+    servers=[
+        {
+            "url": "https://dashboard.previdas.com.br/api/kommo-n8n",
+            "description": "🌐 Servidor de Produção"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "💻 Servidor Local (Desenvolvimento)"
+        }
+    ]
 )
 
 # Importar e incluir routers
