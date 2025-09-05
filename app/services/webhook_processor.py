@@ -27,7 +27,7 @@ class WebhookProcessor:
                 logger.info("ℹ Webhook recebido mas não é uma mensagem de chat")
             
         except Exception as e:
-            logger.error(f" Erro no processamento de webhook: {e}")
+            logger.error(f"❌ Erro no processamento de webhook: {e}")
     
     async def _process_chat_message(self, webhook_data: Dict[str, Any]):
         """Processa mensagem de chat"""
@@ -35,17 +35,31 @@ class WebhookProcessor:
             chat_data = webhook_data["chats"]
             message_data = chat_data["message"]
             
-            # Extrair informações da mensagem
-            conversation_id = chat_data.get("conversation_id", "")
-            contact_id = message_data.get("author", {}).get("id", 0)
+            
+            conversation_id = (
+                chat_data.get("conversation_id") or 
+                message_data.get("conversation_id") or 
+                str(message_data.get("id", ""))
+            )
+            
+            # Buscar contact_id em múltiplos locais - 
+            contact_id = (
+                message_data.get("contact_id") or 
+                message_data.get("author", {}).get("contact_id") or 
+                message_data.get("author", {}).get("id", 0)
+            )
+            
             message_text = message_data.get("text", "")
             author_type = message_data.get("author", {}).get("type", "")
             
+            # Log melhorado para debug
             logger.info(f" Processando mensagem de chat:")
-            logger.info(f"    Conversation ID: {conversation_id}")
-            logger.info(f"    Contact ID: {contact_id}")
-            logger.info(f"    Mensagem: {message_text}")
-            logger.info(f"    Autor: {author_type}")
+            logger.info(f"     Conversation ID: '{conversation_id}'")
+            logger.info(f"     Contact ID: {contact_id}")
+            logger.info(f"     Mensagem: '{message_text}'")
+            logger.info(f"     Autor: {author_type}")
+            logger.info(f"     Dados brutos - chat: {chat_data}")
+            logger.info(f"     Dados brutos - message: {message_data}")
             
             # Verificar se a mensagem é do cliente (não do agente/sistema)
             if author_type == "contact":
@@ -61,13 +75,19 @@ class WebhookProcessor:
                     logger.info(f" Bot pausado para contato {contact_id} - ignorando mensagem")
                     return
                 
-                # Criar payload para n8n
+                # Buscar informações adicionais do contato
+                contact_info = await self.kommo.get_contact(contact_id) if contact_id > 0 else None
+                lead_info = await self.kommo.get_lead_by_contact(contact_id) if contact_id > 0 else None
+                
+                # Criar payload para n8n - MELHORADO
                 n8n_payload = N8nPayload(
                     conversation_id=str(conversation_id),
                     contact_id=contact_id,
                     message_text=message_text,
                     timestamp=datetime.now().isoformat(),
-                    chat_type="whatsapp"
+                    chat_type="whatsapp",
+                    lead_id=lead_info.get("id") if lead_info else None,
+                    contact_name=contact_info.get("name") if contact_info else None
                 )
                 
                 logger.info(f" Enviando payload para n8n: {n8n_payload.dict()}")
@@ -85,6 +105,8 @@ class WebhookProcessor:
                 
         except Exception as e:
             logger.error(f" Erro ao processar mensagem de chat: {e}")
+            import traceback
+            logger.error(f" Traceback: {traceback.format_exc()}")
     
     async def _is_special_command(self, message_text: str) -> bool:
         """Verifica se a mensagem é um comando especial"""
@@ -100,42 +122,42 @@ class WebhookProcessor:
             if "#pausar" in command:
                 success = await self.kommo.pause_bot(contact_id)
                 if success:
-                    logger.info(f"⏸️ Bot pausado com sucesso para contato {contact_id}")
+                    logger.info(f" Bot pausado com sucesso para contato {contact_id}")
                 else:
-                    logger.error(f"❌ Erro ao pausar bot para contato {contact_id}")
+                    logger.error(f"Erro ao pausar bot para contato {contact_id}")
                     
             elif "#voltar" in command:
                 success = await self.kommo.resume_bot(contact_id)
                 if success:
-                    logger.info(f"▶️ Bot reativado com sucesso para contato {contact_id}")
+                    logger.info(f" Bot reativado com sucesso para contato {contact_id}")
                 else:
-                    logger.error(f"❌ Erro ao reativar bot para contato {contact_id}")
+                    logger.error(f"Erro ao reativar bot para contato {contact_id}")
                     
             elif "#status" in command:
                 status = await self.kommo.get_bot_status(contact_id)
-                logger.info(f"📊 Status do bot: {status}")
+                logger.info(f" Status do bot: {status}")
                 
                 # Enviar status como mensagem
                 status_message = f"""
-🤖 **Status do Bot**
-👤 Contato: {status.get('contact_name', 'N/A')}
-🔄 Bot Ativo: {'✅ Sim' if status.get('bot_active') else '❌ Não'}
-📋 Lead ID: {status.get('lead_id', 'N/A')}
-📊 Status Lead: {status.get('lead_status', 'N/A')}
+ **Status do Bot**
+Contato: {status.get('contact_name', 'N/A')}
+ Bot Ativo: {' Sim' if status.get('bot_active') else '❌ Não'}
+ Lead ID: {status.get('lead_id', 'N/A')}
+ Status Lead: {status.get('lead_status', 'N/A')}
                 """.strip()
                 
                 await self.kommo.send_message_to_contact(contact_id, status_message)
                 
             elif "#help" in command:
                 help_message = """
-🤖 **Comandos Disponíveis**
+ **Comandos Disponíveis**
 
 #pausar - Pausa o bot para este contato
 #voltar - Reativa o bot para este contato  
 #status - Mostra status atual do bot
 #help - Mostra esta ajuda
 
-💡 O bot só responde quando está ativo.
+ O bot só responde quando está ativo.
                 """.strip()
                 
                 await self.kommo.send_message_to_contact(contact_id, help_message)
@@ -148,8 +170,8 @@ class WebhookProcessor:
         try:
             message_data = webhook_data["message"]
             
-            logger.info("📨 Mensagem direta recebida (implementar se necessário)")
-            logger.info(f"📝 Dados da mensagem: {message_data}")
+            logger.info(" Mensagem direta recebida (implementar se necessário)")
+            logger.info(f" Dados da mensagem: {message_data}")
             
         except Exception as e:
-            logger.error(f"❌ Erro ao processar mensagem direta: {e}")
+            logger.error(f" Erro ao processar mensagem direta: {e}")
