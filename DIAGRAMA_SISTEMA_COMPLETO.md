@@ -5,7 +5,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                           SISTEMA KOMMO-N8N-PYTHON                             │
-│                         Taxa de Sucesso: 90.5%                                │
+│                                                     │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -201,66 +201,7 @@ kommo-n8n-integration/
 - ✅ **API Notes**: Criação de notas nos leads
 - ✅ **Webhooks**: Recebimento de mensagens
 
-## 🔄 FLUXO DE DADOS DETALHADO
 
-### **Exemplo: Cliente preenche formulário**
 
-1. **Gatilho**: Cliente preenche formulário no site
-2. **Kommo**: Cria lead e contato automaticamente
-3. **Python**: Recebe webhook ou chamada manual
-4. **Identificação**: Sistema identifica vendedor responsável
-5. **Conversa**: Cria conversa proativa no cache
-6. **n8n**: Envia dados para n8n com contexto completo
-7. **IA**: n8n gera mensagem personalizada
-8. **WhatsApp**: Mensagem é enviada via Kommo
-9. **Nota**: Sistema cria nota no lead do Kommo
 
-### **Exemplo: Cliente responde**
 
-1. **Cliente**: Envia mensagem no WhatsApp
-2. **Kommo**: Recebe mensagem e envia webhook
-3. **Python**: Processa webhook e verifica status do bot
-4. **n8n**: Se bot ativo, envia para n8n
-5. **IA**: n8n gera resposta personalizada
-6. **Kommo**: Resposta é enviada via API
-7. **Nota**: Sistema registra interação no lead
-
-### **Exemplo: Vendedor assume**
-
-1. **Vendedor**: Digita `/assumir 12345` no WhatsApp Business
-2. **Kommo**: Envia webhook (não é do contato)
-3. **Python**: Detecta comando e pausa bot
-4. **Status**: Bot fica pausado para aquele contato
-5. **Vendedor**: Pode atender cliente normalmente
-6. **Liberação**: Vendedor digita `/liberar 12345`
-7. **Reativação**: Bot volta a funcionar automaticamente
-
-## 📈 MÉTRICAS DE SUCESSO
-
-- **Taxa de Sucesso**: 90.5% (19/21 endpoints funcionando)
-- **Vendedores Reais**: 9 vendedores sincronizados do Kommo
-- **Vendedores Fictícios**: 3 vendedores de exemplo
-- **Endpoints Ativos**: 26 endpoints funcionais
-- **Integrações**: Kommo ✅, n8n ✅, Supabase ✅
-- **Funcionalidades**: Proativo ✅, Reativo ✅, Controle ✅
-
-## 🚀 PRÓXIMOS PASSOS
-
-1. **Corrigir 2 endpoints restantes** (agendamento e conversa)
-2. **Implementar detecção automática** de vendedor assumindo
-3. **Adicionar mais templates** de mensagens
-4. **Implementar relatórios** de performance
-5. **Adicionar testes automatizados**
-
-## 🎉 CONCLUSÃO
-
-O sistema está **funcionando muito bem** com 90.5% de sucesso! Todas as funcionalidades principais estão operacionais:
-
-- ✅ **Integração Kommo** funcionando
-- ✅ **Sistema de vendedores** dinâmico
-- ✅ **Conversas proativas** ativas
-- ✅ **Controle de bot** funcional
-- ✅ **Webhooks** processando
-- ✅ **Sistema de agendamento** operacional
-
-O sistema está pronto para uso em produção! 🚀
