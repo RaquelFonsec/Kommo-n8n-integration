@@ -317,14 +317,8 @@ curl http://localhost:8000/test-integration
    - Verifique as permissões da API do Kommo
    - Confirme se o endpoint `/users` está acessível
 
-### **Contato**
-- **Issues**: Abra uma issue no GitHub
-- **Documentação**: Consulte a documentação da API
-- **Logs**: Verifique os logs para mais detalhes
 
-## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ## 🎉 Status do Projeto
 
@@ -338,4 +332,4 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ---
 
-**Desenvolvido com ❤️ para automação de conversas inteligentes**
+
