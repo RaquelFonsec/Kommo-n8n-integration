@@ -3,29 +3,22 @@ import os
 from datetime import datetime
 
 def setup_logger(name: str) -> logging.Logger:
-    """Setup logger com formatação consistente"""
+    """Configura logger para o módulo"""
     logger = logging.getLogger(name)
     
     if not logger.handlers:
-        # Criar handler para console
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-        
-        # Criar handler para arquivo
-        os.makedirs("logs", exist_ok=True)
-        file_handler = logging.FileHandler(f"logs/app-{datetime.now().strftime('%Y%m%d')}.log")
-        file_handler.setLevel(logging.INFO)
-        
-        # Formato das mensagens
+        # Configurar formato
         formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
-        console_handler.setFormatter(formatter)
-        file_handler.setFormatter(formatter)
         
-        # Adicionar handlers
+        # Handler para console
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
-        logger.addHandler(file_handler)
-        logger.setLevel(logging.INFO)
+        
+        # Nível de log
+        log_level = os.getenv("LOG_LEVEL", "INFO")
+        logger.setLevel(getattr(logging, log_level.upper()))
     
     return logger

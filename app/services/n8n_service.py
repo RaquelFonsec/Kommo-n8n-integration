@@ -2,8 +2,8 @@ import os
 import aiohttp
 import asyncio
 from typing import Dict, Any
-from app.models.kommo_models import N8nPayload
-from app.utils.logger import setup_logger
+from models.kommo_models import N8nPayload
+from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
@@ -11,6 +11,9 @@ class N8nService:
     def __init__(self):
         self.webhook_url = os.getenv("N8N_WEBHOOK_URL")
         self.api_key = os.getenv("N8N_API_KEY")
+        
+        # Timeout padrão para todas as requisições
+        self.DEFAULT_TIMEOUT = aiohttp.ClientTimeout(total=30, connect=10)
         
         if not self.webhook_url:
             logger.warning("⚠️ N8N_WEBHOOK_URL não configurada!")
@@ -31,10 +34,7 @@ class N8nService:
             logger.info(f"   🔗 URL: {self.webhook_url}")
             logger.info(f"   📦 Payload: {payload_dict}")
             
-            # Configurar timeout para evitar travamentos
-            timeout = aiohttp.ClientTimeout(total=30, connect=10)
-            
-            async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with aiohttp.ClientSession(timeout=self.DEFAULT_TIMEOUT) as session:
                 async with session.post(
                     self.webhook_url, 
                     json=payload_dict, 
@@ -90,10 +90,8 @@ class N8nService:
             if self.api_key:
                 headers["Authorization"] = f"Bearer {self.api_key}"
             
-            # Teste simples de conectividade
-            timeout = aiohttp.ClientTimeout(total=10, connect=5)
-            
-            async with aiohttp.ClientSession(timeout=timeout) as session:
+            # Use o timeout padrão para consistência
+            async with aiohttp.ClientSession(timeout=self.DEFAULT_TIMEOUT) as session:
                 async with session.get(self.webhook_url, headers=headers) as response:
                     if response.status in [200, 404, 405]:  # 404/405 são normais para webhooks
                         return {
