@@ -4,11 +4,7 @@
 
 Sistema de integração completo entre **Kommo CRM**, **n8n (Automação/IA)** e **Python API** para automação de conversas proativas e reativas via WhatsApp Business.
 
-### 🎯 Taxa de Sucesso: 100%
-- ✅ **26 endpoints** funcionais
-- ✅ **9 vendedores reais** sincronizados do Kommo
-- ✅ **3 vendedores fictícios** para testes
-- ✅ **Integrações**: Kommo, n8n, Supabase
+
 
 ## 🏗️ Arquitetura
 
