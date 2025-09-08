@@ -4,11 +4,7 @@
 
 Sistema de integração completo entre **Kommo CRM**, **n8n (Automação/IA)** e **Python API** para automação de conversas proativas e reativas via WhatsApp Business.
 
-### 🎯 Taxa de Sucesso: 100%
-- ✅ **26 endpoints** funcionais
-- ✅ **9 vendedores reais** sincronizados do Kommo
-- ✅ **3 vendedores fictícios** para testes
-- ✅ **Integrações**: Kommo, n8n, Supabase
+
 
 ## 🏗️ Arquitetura
 
@@ -321,14 +317,8 @@ curl http://localhost:8000/test-integration
    - Verifique as permissões da API do Kommo
    - Confirme se o endpoint `/users` está acessível
 
-### **Contato**
-- **Issues**: Abra uma issue no GitHub
-- **Documentação**: Consulte a documentação da API
-- **Logs**: Verifique os logs para mais detalhes
 
-## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ## 🎉 Status do Projeto
 
@@ -342,4 +332,4 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ---
 
-**Desenvolvido com ❤️ para automação de conversas inteligentes**
+
