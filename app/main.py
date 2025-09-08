@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 from app.models.kommo_models import AgendamentoPayload, VendedorCustom
+from app.services.kommo_service import KommoService
 
 # Import das rotas OAuth - Desabilitado temporariamente (métodos removidos)
 # from app.routes import oauth
@@ -1388,6 +1389,32 @@ async def get_vendedor_by_lead_endpoint(lead_id: int):
 async def sincronizar_vendedores_endpoint():
     """Endpoint para sincronizar vendedores (alias)"""
     return await sincronizar_vendedores_kommo()
+
+@app.post("/refresh-token")
+async def refresh_kommo_token():
+    """Endpoint para renovar token do Kommo"""
+    try:
+        kommo_service = KommoService()
+        success = await kommo_service.refresh_token_if_needed()
+        
+        if success:
+            return {
+                "status": "success",
+                "message": "Token renovado com sucesso",
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "Falha ao renovar token",
+                "suggestion": "Verifique refresh_token e credenciais"
+            }
+    except Exception as e:
+        logger.error(f"Erro ao renovar token: {e}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
