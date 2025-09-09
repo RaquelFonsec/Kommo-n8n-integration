@@ -215,94 +215,137 @@ async def send_to_n8n(payload: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"Erro ao enviar para n8n: {e}")
         return {"error": str(e)}
 
-async def send_kommo_message(conversation_id: str, message: str) -> Dict[str, Any]:
+async def send_kommo_message_new(conversation_id: str, message: str) -> Dict[str, Any]:
     """
-    CORRIGIDO: Envia mensagem via API de Notes do Kommo
+    NOVA IMPLEMENTAÇÃO: Envia mensagem via n8n → WhatsApp Business API
     
-    Como não temos permissão para a API de chats, criamos uma nota no lead
-    que o vendedor pode ver e enviar manualmente para o cliente
+    Como não temos permissão para APIs de mensagens do Kommo, enviamos via n8n
+    que tem integração com WhatsApp Business API
     """
+    logger.info(f" NOVA IMPLEMENTAÇÃO: send_kommo_message chamada para {conversation_id}")
+    print(f" NOVA IMPLEMENTAÇÃO: send_kommo_message chamada para {conversation_id}")
+    try:
+        n8n_webhook_url = os.getenv("N8N_WEBHOOK_URL")
+        
+        if not n8n_webhook_url:
+            logger.error("Variável N8N_WEBHOOK_URL não configurada")
+            return {"success": False, "error": "Configuração do n8n não encontrada"}
+        
+        # Extrair contact_id e lead_id do conversation_id
+        try:
+            parts = conversation_id.split("_")
+            if len(parts) >= 3 and parts[1].isdigit() and parts[2].isdigit():
+                contact_id = parts[1]
+                lead_id = parts[2]
+            else:
+                logger.error(f"Conversation_id inválido: {conversation_id}")
+                return {"success": False, "error": "conversation_id inválido"}
+        except:
+            logger.error(f"Não foi possível extrair contact_id e lead_id de: {conversation_id}")
+            return {"success": False, "error": "conversation_id inválido"}
+        
+        # Buscar dados do lead para obter número do WhatsApp
+        lead_data = await get_lead_data(lead_id)
+        if not lead_data.get("success"):
+            logger.error(f"Erro ao buscar dados do lead {lead_id}")
+            return {"success": False, "error": "Lead não encontrado"}
+        
+        # Extrair número do WhatsApp dos campos customizados
+        whatsapp_number = None
+        phone_number = None
+        
+        for field in lead_data.get("data", {}).get("custom_fields_values", []):
+            if field.get("field_name") == "Whatsapp":
+                whatsapp_number = field.get("values", [{}])[0].get("value")
+            elif field.get("field_name") == "Celular":
+                phone_number = field.get("values", [{}])[0].get("value")
+        
+        # Usar WhatsApp se disponível, senão usar celular
+        target_number = whatsapp_number or phone_number
+        if not target_number:
+            logger.error(f"Número de WhatsApp/Celular não encontrado para lead {lead_id}")
+            return {"success": False, "error": "Número de contato não encontrado"}
+        
+        # Limpar número (remover caracteres especiais)
+        clean_number = ''.join(filter(str.isdigit, target_number))
+        if clean_number.startswith('55'):  # Código do Brasil
+            clean_number = clean_number[2:]  # Remove código do país
+        
+        # URL do webhook do n8n para envio de mensagens (usando webhook existente)
+        n8n_whatsapp_url = n8n_webhook_url.rstrip('/')
+        
+        headers = {
+            "Content-Type": "application/json"
+        }
+        
+        # Payload para n8n enviar via WhatsApp Business API
+        payload = {
+            "to": f"55{clean_number}",  # Adiciona código do Brasil
+            "message": message,
+            "conversation_id": conversation_id,
+            "lead_id": lead_id,
+            "contact_id": contact_id,
+            "source": "kommo_bot_response"
+        }
+        
+        logger.info(f"Enviando mensagem via n8n → WhatsApp: {n8n_whatsapp_url}")
+        logger.info(f"Para: 55{clean_number}")
+        logger.info(f"Mensagem: {message}")
+        
+        timeout = aiohttp.ClientTimeout(total=30, connect=10)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(n8n_whatsapp_url, json=payload, headers=headers) as response:
+                if response.status in [200, 201]:
+                    result = await response.json()
+                    logger.info(f"Mensagem enviada com sucesso via WhatsApp")
+                    return {
+                        "success": True, 
+                        "data": result,
+                        "message": "Mensagem enviada via WhatsApp Business API",
+                        "conversation_id": conversation_id,
+                        "lead_id": lead_id,
+                        "phone_number": f"55{clean_number}",
+                        "method": "n8n_whatsapp_api"
+                    }
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Erro n8n WhatsApp: {response.status} - {error_text}")
+                    return {"success": False, "error": f"n8n WhatsApp error {response.status}: {error_text}"}
+                    
+    except Exception as e:
+        logger.error(f"Erro ao enviar mensagem via WhatsApp: {e}")
+        return {"success": False, "error": str(e)}
+
+async def get_lead_data(lead_id: str) -> Dict[str, Any]:
+    """Busca dados de um lead específico"""
+    logger.info(f"🔍 DEBUG: get_lead_data chamada para lead_id: {lead_id}")
     try:
         kommo_api_url = os.getenv("KOMMO_API_URL")
         access_token = os.getenv("KOMMO_ACCESS_TOKEN")
         
         if not kommo_api_url or not access_token:
-            logger.error("Variáveis KOMMO_API_URL ou KOMMO_ACCESS_TOKEN não configuradas")
-            return {"success": False, "error": "Configuração do Kommo não encontrada"}
+            logger.error("❌ KOMMO_API_URL ou KOMMO_ACCESS_TOKEN não configurados")
+            return {"success": False, "error": "Configurações do Kommo não encontradas"}
         
-        # Extrair lead_id do conversation_id
-        # Formato esperado: "conv_contact_id_lead_id" ou apenas texto simples
-        try:
-            parts = conversation_id.split("_")
-            if len(parts) >= 3 and parts[2].isdigit():
-                lead_id = parts[2]  # lead_id está na terceira posição e é numérico
-            elif len(parts) >= 2 and parts[1].isdigit():
-                lead_id = parts[1]  # lead_id está na segunda posição e é numérico
-            else:
-                # Se não conseguir extrair lead_id válido, não criar nota no Kommo
-                logger.info(f"Conversation_id sem lead_id válido: {conversation_id}")
-                return {
-                    "success": True, 
-                    "message": "Mensagem processada sem criar nota no Kommo (conversation_id sem lead_id válido)",
-                    "conversation_id": conversation_id,
-                    "method": "no_kommo_note"
-                }
-        except:
-            logger.error(f"Não foi possível extrair lead_id de: {conversation_id}")
-            return {"success": False, "error": "conversation_id inválido"}
-        
-        # URL da API de leads do Kommo (FUNCIONA com suas permissões)
         full_url = f"{kommo_api_url.rstrip('/')}/leads/{lead_id}"
+        headers = {"Authorization": f"Bearer {access_token}"}
         
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json"
-        }
+        logger.info(f"🔍 DEBUG: Fazendo requisição para: {full_url}")
         
-        # Atualizar lead com informações da resposta da IA (payload simplificado)
-        payload = {
-            "name": f"🤖 Bot Ativo - {datetime.now().strftime('%d/%m %H:%M')}"
-        }
-        
-        logger.info(f"Atualizando lead {lead_id}: {full_url}")
-        logger.info(f"Conversation ID: {conversation_id}")
-        logger.info(f"Mensagem: {message}")
-        
-        timeout = aiohttp.ClientTimeout(total=15, connect=5)
+        timeout = aiohttp.ClientTimeout(total=10, connect=5)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.patch(full_url, json=payload, headers=headers) as response:
-                if response.status in [200, 201]:
+            async with session.get(full_url, headers=headers) as response:
+                logger.info(f"🔍 DEBUG: Resposta da API: {response.status}")
+                if response.status == 200:
                     result = await response.json()
-                    logger.info(f"Lead {lead_id} atualizado com sucesso")
-                    return {
-                        "success": True, 
-                        "data": result,
-                        "note": "Lead atualizado - resposta da IA registrada",
-                        "lead_id": lead_id,
-                        "method": "leads_api"
-                    }
-                elif response.status == 401:
-                    error_text = await response.text()
-                    logger.error(f"🔐 Erro de autenticação (401): Token expirado ou inválido")
-                    logger.error(f"📄 Resposta completa: {error_text}")
-                    return {
-                        "success": False, 
-                        "error": f"Token expirado ou inválido (401)",
-                        "details": error_text,
-                        "suggestion": "Execute o refresh token ou obtenha um novo token de acesso",
-                        "oauth_endpoints": {
-                            "status": "/oauth/status",
-                            "refresh": "/oauth/refresh",
-                            "exchange": "/oauth/exchange"
-                        }
-                    }
+                    logger.info(f"✅ DEBUG: Lead {lead_id} encontrado com sucesso")
+                    return {"success": True, "data": result}
                 else:
                     error_text = await response.text()
-                    logger.error(f"Erro ao criar nota: {response.status} - {error_text}")
+                    logger.error(f"❌ DEBUG: Erro na API: {response.status} - {error_text}")
                     return {"success": False, "error": f"Status {response.status}: {error_text}"}
-                    
     except Exception as e:
-        logger.error(f"Erro ao criar nota: {e}")
+        logger.error(f"❌ DEBUG: Exceção em get_lead_data: {e}")
         return {"success": False, "error": str(e)}
 
 async def test_kommo_lead_access(lead_id: str) -> Dict[str, Any]:
@@ -680,6 +723,7 @@ async def receive_n8n_response(n8n_response: N8nResponse):
     """
     try:
         logger.info(f"Resposta do n8n recebida: {n8n_response.conversation_id}")
+        print(f" DEBUG: Endpoint /send-response chamado para {n8n_response.conversation_id}")
         
         # Verificar se deve enviar mensagem
         if not n8n_response.should_send:
@@ -700,7 +744,7 @@ async def receive_n8n_response(n8n_response: N8nResponse):
             }
         
         # Criar nota no Kommo (CORRIGIDO)
-        result = await send_kommo_message(
+        result = await send_kommo_message_new(
             conversation_id=n8n_response.conversation_id,
             message=n8n_response.response_text
         )
@@ -929,7 +973,7 @@ async def test_kommo_connection():
 async def create_test_note(lead_id: str, message: str = "Teste de nota via API"):
     """Cria uma nota de teste em um lead específico"""
     conversation_id = f"test_{lead_id}"
-    result = await send_kommo_message(conversation_id, message)
+    result = await send_kommo_message_new(conversation_id, message)
     return result
 
 @app.post("/test-lead-update/{lead_id}")
