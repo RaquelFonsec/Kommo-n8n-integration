@@ -231,13 +231,22 @@ async def send_kommo_message(conversation_id: str, message: str) -> Dict[str, An
             return {"success": False, "error": "Configuração do Kommo não encontrada"}
         
         # Extrair lead_id do conversation_id
-        # Formato esperado: "conv_contact_id_lead_id"
+        # Formato esperado: "conv_contact_id_lead_id" ou apenas texto simples
         try:
             parts = conversation_id.split("_")
-            if len(parts) >= 3:
-                lead_id = parts[2]  # lead_id está na terceira posição
+            if len(parts) >= 3 and parts[2].isdigit():
+                lead_id = parts[2]  # lead_id está na terceira posição e é numérico
+            elif len(parts) >= 2 and parts[1].isdigit():
+                lead_id = parts[1]  # lead_id está na segunda posição e é numérico
             else:
-                lead_id = parts[-1]  # fallback para último elemento
+                # Se não conseguir extrair lead_id válido, não criar nota no Kommo
+                logger.info(f"Conversation_id sem lead_id válido: {conversation_id}")
+                return {
+                    "success": True, 
+                    "message": "Mensagem processada sem criar nota no Kommo (conversation_id sem lead_id válido)",
+                    "conversation_id": conversation_id,
+                    "method": "no_kommo_note"
+                }
         except:
             logger.error(f"Não foi possível extrair lead_id de: {conversation_id}")
             return {"success": False, "error": "conversation_id inválido"}
