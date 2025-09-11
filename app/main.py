@@ -223,10 +223,13 @@ async def start_proactive_conversation(proactive_data: ProactiveStart) -> Dict[s
         return {"success": False, "error": str(e)}
 
 # ==========================================
-# FUNÇÕES DE NOTA KOMMO
+# FUNÇÕES DE NOTA KOMMO - REMOVIDAS
 # ==========================================
+# Simplificação: N8N agora cuida de criar notas + enviar WhatsApp
+# Sistema mais simples e confiável
 
-async def create_kommo_note_simple(conversation_id: str, message: str) -> Dict[str, Any]:
+# REMOVIDO: create_kommo_note_simple - N8N faz isso agora
+async def create_kommo_note_simple_DEPRECATED(conversation_id: str, message: str) -> Dict[str, Any]:
     """
     Cria uma nota simples no Kommo usando API de Notes v4
     Configurado para trabalhar com as permissões corretas do token
@@ -308,10 +311,11 @@ async def create_kommo_note_simple(conversation_id: str, message: str) -> Dict[s
         logger.error(f"❌ Erro ao criar nota via API Notes: {e}")
         return {"success": False, "error": str(e)}
 
-async def send_kommo_message_new(conversation_id: str, message: str) -> Dict[str, Any]:
+# REMOVIDO: send_kommo_message_new - N8N faz isso direto agora
+async def send_kommo_message_new_DEPRECATED(conversation_id: str, message: str) -> Dict[str, Any]:
     """
-    FALLBACK: Envia mensagem via n8n → WhatsApp Business API
-    Usado quando a criação de nota direta falha
+    DEPRECATED: Função removida - N8N agora faz nota + WhatsApp diretamente
+    Mantida apenas para referência histórica
     """
     logger.info(f"🔄 FALLBACK: Enviando via n8n para {conversation_id}")
     
@@ -475,41 +479,51 @@ async def receber_distribuicao_lead(distribuicao: DistribuicaoPayload):
 
 @app.post("/send-response")
 async def receive_n8n_response(response_data: N8nResponse):
-    """Recebe resposta do n8n e cria nota no Kommo"""
+    """Recebe resposta do n8n e envia de volta para processar nota + WhatsApp"""
     try:
         logger.info(f"Resposta do n8n recebida: {response_data.conversation_id}")
-        logger.info(f"create_kommo_note_simple chamada para {response_data.conversation_id}")
         
-        # Tentar criar nota direta no Kommo
-        note_result = await create_kommo_note_simple(
-            response_data.conversation_id, 
-            response_data.response_text
-        )
+        # Simplificado: Sempre envia para n8n processar (criar nota + enviar WhatsApp)
+        # N8N tem permissões corretas e é especializado nisso
         
-        if note_result.get("success"):
+        # Extrair lead_id para envio
+        parts = response_data.conversation_id.split("_")
+        lead_id = None
+        if len(parts) >= 3 and parts[-1].isdigit():
+            lead_id = parts[-1]
+        elif len(parts) >= 2 and parts[1].isdigit():
+            lead_id = parts[1]
+        
+        # Preparar payload para n8n processar tudo
+        payload = {
+            "action": "create_note_and_send",
+            "conversation_id": response_data.conversation_id,
+            "response_text": response_data.response_text,
+            "response_type": response_data.response_type,
+            "confidence": getattr(response_data, 'confidence', 1.0),
+            "lead_id": lead_id,
+            "method": "n8n_direct",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        # Enviar para n8n que fará nota + WhatsApp
+        result = await send_to_n8n(payload)
+        
+        if "error" not in result:
+            logger.info("✅ Resposta enviada para n8n processar (nota + WhatsApp)")
             return {
                 "success": True,
-                "message": "Nota criada no Kommo com sucesso",
+                "message": "Resposta processada pelo n8n (nota + WhatsApp)",
                 "conversation_id": response_data.conversation_id,
-                "note_data": note_result.get("data")
+                "method": "n8n_complete",
+                "n8n_response": result
             }
         else:
-            logger.info("🔄 Tentando fallback com método que funciona...")
-            # Fallback: enviar via n8n para WhatsApp
-            fallback_result = await send_kommo_message_new(
-                response_data.conversation_id,
-                response_data.response_text
-            )
+            logger.error(f"Erro ao enviar para n8n: {result}")
+            raise HTTPException(status_code=500, detail=f"Erro no n8n: {result.get('error')}")
             
-            if fallback_result.get("success"):
-                return fallback_result
-            else:
-                error_msg = note_result.get("error", "Erro desconhecido")
-                logger.error(f"Erro ao criar nota no Kommo: {error_msg}")
-                raise HTTPException(status_code=500, detail=f"Erro ao criar nota no Kommo: {error_msg}")
-                
     except Exception as e:
-        logger.error(f"Erro ao processar resposta do n8n: {e}")
+        logger.error(f"Erro ao processar resposta: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/webhooks/kommo")

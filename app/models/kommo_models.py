@@ -67,8 +67,11 @@ class N8nResponse(BaseModel):
     """CORRIGIDO: Modelo compatível com main.py"""
     conversation_id: str = Field(..., description="ID da conversa")
     response_text: str = Field(..., description="Texto da resposta da IA")
+    response_type: Optional[str] = Field(None, description="Tipo de resposta")
+    confidence: Optional[float] = Field(None, description="Confiança da IA")
     should_send: bool = Field(default=True, description="Se deve enviar a resposta")
     should_handoff: bool = Field(default=False, description="Se deve transferir para humano")
+    next_action: Optional[str] = Field(None, description="Próxima ação sugerida")
     metadata: Optional[Dict[str, Any]] = Field(None, description="Metadados adicionais")
 
 class BotCommand(BaseModel):
