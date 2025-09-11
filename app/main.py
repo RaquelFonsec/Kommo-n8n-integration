@@ -42,6 +42,7 @@ app.add_middleware(
 
 _proactive_conversations = {}
 _vendedores_cache = {}
+_bot_status_cache = {}
 _last_vendedores_update = None
 
 # ==========================================
