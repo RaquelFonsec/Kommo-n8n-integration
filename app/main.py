@@ -54,13 +54,11 @@ async def send_to_n8n(payload: Dict[str, Any]) -> Dict[str, Any]:
     Configurado para usar a URL de produção correta
     """
     try:
-        # Usar URL de produção por padrão
-        n8n_webhook_url = os.getenv("N8N_WEBHOOK_URL", "https://n8n.previdas.com.br/webhook/serena")
+        # Usar URL do n8n configurada no .env
+        n8n_webhook_url = os.getenv("N8N_WEBHOOK_URL", "https://n8n-n8n.eanhw2.easypanel.host/webhook/serena")
         
-        # Se ainda estiver usando a URL antiga, forçar a de produção
-        if "n8n-n8n.eanhw2.easypanel.host" in n8n_webhook_url:
-            n8n_webhook_url = "https://n8n.previdas.com.br/webhook/serena"
-            logger.info("🔄 Redirecionando para URL de produção n8n")
+        # Manter URL do n8n que funciona (eanhw2.easypanel.host é o n8n real)
+        # n8n.previdas.com.br é ESTE sistema Python, não o n8n!
         
         logger.info(f"Enviando para n8n: {n8n_webhook_url}")
         logger.info(f"Payload: {payload}")
