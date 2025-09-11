@@ -795,6 +795,118 @@ async def start_proactive_endpoint(proactive_data: ProactiveStart):
             "message": str(e)
         }
 
+@app.post("/bot/control")
+async def bot_control(command_data: BotCommand):
+    """Controle do bot - pausar/reativar por contato"""
+    try:
+        contact_id = command_data.contact_id
+        command = command_data.command.lower()
+        
+        if command == "pause":
+            # Cache para marcar bot como pausado
+            _bot_status_cache[contact_id] = {
+                "status": "paused",
+                "timestamp": datetime.now().isoformat(),
+                "paused_by": "manual_control"
+            }
+            
+            logger.info(f"Bot pausado para contato {contact_id}")
+            return {
+                "status": "success",
+                "message": f"Bot pausado para contato {contact_id}",
+                "contact_id": contact_id,
+                "action": "paused"
+            }
+            
+        elif command == "resume":
+            # Remove do cache para reativar
+            if contact_id in _bot_status_cache:
+                del _bot_status_cache[contact_id]
+            
+            logger.info(f"Bot reativado para contato {contact_id}")
+            return {
+                "status": "success",
+                "message": f"Bot reativado para contato {contact_id}",
+                "contact_id": contact_id,
+                "action": "resumed"
+            }
+            
+        elif command == "status":
+            # Verificar status atual
+            status = _bot_status_cache.get(contact_id, {"status": "active"})
+            return {
+                "status": "success",
+                "contact_id": contact_id,
+                "bot_status": status.get("status", "active"),
+                "timestamp": status.get("timestamp"),
+                "paused_by": status.get("paused_by")
+            }
+            
+        else:
+            raise HTTPException(status_code=400, detail="Comando inválido. Use: pause, resume ou status")
+            
+    except Exception as e:
+        logger.error(f"Erro no controle do bot: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/bot/status")
+async def get_bot_status():
+    """Ver status geral de todos os bots"""
+    try:
+        total_paused = len(_bot_status_cache)
+        total_active = len(_proactive_conversations) - total_paused
+        
+        return {
+            "status": "success",
+            "summary": {
+                "total_conversations": len(_proactive_conversations),
+                "active_bots": max(0, total_active),
+                "paused_bots": total_paused
+            },
+            "paused_contacts": list(_bot_status_cache.keys()),
+            "active_conversations": list(_proactive_conversations.keys()),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro ao obter status dos bots: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/bot/pause/{contact_id}")
+async def pause_bot_quick(contact_id: int):
+    """Pausar bot rapidamente via URL"""
+    try:
+        _bot_status_cache[contact_id] = {
+            "status": "paused",
+            "timestamp": datetime.now().isoformat(),
+            "paused_by": "quick_pause"
+        }
+        
+        return {
+            "status": "success",
+            "message": f"Bot pausado para contato {contact_id}",
+            "contact_id": contact_id
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/bot/resume/{contact_id}")
+async def resume_bot_quick(contact_id: int):
+    """Reativar bot rapidamente via URL"""
+    try:
+        if contact_id in _bot_status_cache:
+            del _bot_status_cache[contact_id]
+        
+        return {
+            "status": "success",
+            "message": f"Bot reativado para contato {contact_id}",
+            "contact_id": contact_id
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/config/check")
 async def config_check():
     """Verificação de configuração completa"""
