@@ -1,0 +1,38 @@
+#!/bin/bash
+
+echo "🔑 Atualizando tokens do Kommo no servidor de produção..."
+
+# Conectar no servidor e atualizar o arquivo .env
+ssh root@n8n.previdas.com.br << 'EOF'
+cd /root/kommo-n8n-integration
+
+echo "📋 Fazendo backup do .env atual..."
+cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
+
+echo "🔧 Atualizando tokens no .env..."
+# Atualizar o ACCESS_TOKEN
+sed -i 's/KOMMO_ACCESS_TOKEN=.*/KOMMO_ACCESS_TOKEN=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjhiMTI0OGVjNTY3YTU5MzY1ODY3NWYyOWEzODYzZmRjOGU3MjRiZDI1OWU0MjY4NjVhYmRhM2MzZWZmNWNkOTFlM2VlMGMzZmNiYjY4ZGIxIn0.eyJhdWQiOiIzYjkxYzc4OS04NTZiLTQxNGMtYmQzNy0wMWQ0Zjg5ZDBiMjQiLCJqdGkiOiI4YjEyNDhlYzU2N2E1OTM2NTg2NzVmMjlhMzg2M2ZkYzhlNzI0YmQyNTllNDI2ODY1YWJkYTNjM2VmZjVjZDkxZTNlZTBjM2ZjYmI2OGRiMSIsImlhdCI6MTc1NzA4ODc1MSwibmJmIjoxNzU3MDg4NzUxLCJleHAiOjE3NTcxNzUxNTAsInN1YiI6IjEzMTkzNDQ3IiwiZ3JhbnRfdHlwZSI6IiIsImFjY291bnRfaWQiOjM0NTkyMTM5LCJiYXNlX2RvbWFpbiI6ImtvbW1vLmNvbSIsInZlcnNpb24iOjIsInNjb3BlcyI6WyJwdXNoX25vdGlmaWNhdGlvbnMiLCJmaWxlcyIsImNybSIsImZpbGVzX2RlbGV0ZSIsIm5vdGlmaWNhdGlvbnMiXSwidXNlcl9mbGFncyI6MCwiaGFzaF91dWlkIjoiNTNiYWY1MGEtZTg3MC00ZDg0LWI2MTUtN2E4NjBmZjZlMzU0IiwiYXBpX2RvbWFpbiI6ImFwaS1jLmtvbW1vLmNvbSJ9.SNFxf4ZOGxDOfnWQDaKlFKKI-8HLstcGUON0fu3ddkS-Ssv4s5htqVVp9lbT8hLyarldVrG3Z26MROmx1bnMrJQNgLRRpE6S34TcRNLSDWDZPYY1d3QFNd8PyaHNgakdweTq6IXeDWlK4iNjLrZZq2-aiIpb7Sg_LARSrD4zHqxdBK6EyJMOJSgXomrBGoni7udRhi04wLvyP6G_1YK8bSJPNfB6zqleEaAnGOzn1zWXqE6UMXKTu0bWGtX_qQKgdIdgxeDA_bswSMbzC-qOe-Ou8rgiO5oxKgatYA_s86vIY2U_i6WSK4ZqnUPjQtCBvgabVgRI7BX1oO6-brZZ1A/' .env
+
+# Atualizar o REFRESH_TOKEN
+sed -i 's/KOMMO_REFRESH_TOKEN=.*/KOMMO_REFRESH_TOKEN=def50200cb0a4d4b4a022c48523762e7b5beb96da6cade4cd5800eb5a44eaa92993ce7f70ba78c90e698c05aace3a3e2d253b3bfd971d6c76cf5c0bc35ee28fb86278698196bebb1429c0fffed75e886814673b11de2eb60c29b7ae27c1b0ce936a56348f37c8b67fb2c9b45280c48c17d261862bc60c5e419fbc9b6cfbdf7b7b28091b1aa9aea6471d62a3bc0d083001efefa73a61c21352c47bb1fe4203293f0a2446f4acada1b94d5f1012278aea3eeb0af69e5f0254bc03c3032a2c51aec2ab7b71611edad6a5ea87388f1df2f3518d48405c17396746753b6952617531e7d006f10244e5c6c6410f0a5ada069781f2c0872104049d1febb2b96ce2a6b6e25c91c742b5ad36cd5723db6d9896337f297d96948b0e7df8f204ae9a8f6042f2ccc6ee50d3915d54dd203eb0449a15a073428f2a09e709da4952f4c12b1fa3feba9b71d54795f90e339235069020ca0b167cc2e5fe245f32b94cf306ec86f8efaa2a9729f601052d8cbd162a184bfa6f88b4aeccdff4362827382576cd76765ef3b722a9c7da29429ca6f1b2578993d3f5ef1a71ef32cab5938d82b5be07a77570bb2a6d220ea6944637bdc5647a57b614b4c82c4e0aabe91f63391bc2488d1c68f713aa0f847a2fc5c73d9bb006dc8d544b00ad9a5ddf08a6222e7f7f3297d4c57de66fc38314da67759eec7e2/' .env
+
+# Atualizar a data de expiração
+sed -i 's/KOMMO_TOKEN_EXPIRES_AT=.*/KOMMO_TOKEN_EXPIRES_AT=2025-09-06T18:12:30.656838/' .env
+
+echo "✅ Tokens atualizados no .env"
+echo "🔄 Reiniciando aplicação..."
+docker-compose down
+docker-compose up -d
+
+echo "⏳ Aguardando aplicação inicializar..."
+sleep 10
+
+echo "🧪 Testando sincronização de vendedores..."
+curl -X POST http://localhost:8000/sincronizar/vendedores
+
+echo "✅ Deploy concluído!"
+EOF
+
+echo "🎉 Tokens atualizados com sucesso!"
+
+
