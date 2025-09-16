@@ -101,6 +101,7 @@ class N8nPayload(BaseModel):
     chat_type: str = Field(default="whatsapp", description="Tipo do chat")
     lead_id: Optional[int] = Field(None, description="ID do lead")
     contact_name: Optional[str] = Field(None, description="Nome do contato")
+    phone_number: Optional[str] = Field(None, description="Número de telefone/WhatsApp do contato")
     
     # Contexto proativo
     proactive_context: Optional[Dict[str, Any]] = Field(None, description="Contexto de conversas proativas")

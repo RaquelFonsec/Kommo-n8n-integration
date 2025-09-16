@@ -1,50 +1,43 @@
-# 🔄 FLUXOGRAMA DO SISTEMA KOMMO-N8N-PYTHON
+# 🔄 FLUXOGRAMA DO SISTEMA KOMMO-N8N-PYTHON (SIMPLIFICADO)
 
-## 📱 FLUXO PROATIVO (Bot inicia conversa)
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              FLUXO PROATIVO                                    │
-│                         (Bot inicia conversa)                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   GATILHO   │───►│   PYTHON    │───►│     N8N     │───►│  WHATSAPP   │
-│             │    │             │    │             │    │             │
-│ • Formulário│    │ • Identifica│    │ • Gera      │    │ • Envia     │
-│   preenchido│    │   vendedor  │    │   mensagem  │    │   mensagem  │
-│ • Material  │    │ • Cria      │    │ • IA        │    │   proativa  │
-│   baixado   │    │   conversa  │    │   personaliza│   │             │
-│ • Agendamento│   │ • Valida    │    │ • Contexto  │    │             │
-│   solicitado│    │   área      │    │   completo  │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-```
-
-## 💬 FLUXO REATIVO (Cliente responde)
+## 📱 FLUXO 1: FORMULÁRIO → MENSAGEM PROATIVA
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              FLUXO REATIVO                                     │
-│                         (Cliente responde)                                    │
+│                           FLUXO PROATIVO SIMPLIFICADO                          │
+│                      (Formulário → WhatsApp Automático)                       │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   CLIENTE   │───►│   KOMMO     │───►│   PYTHON    │───►│     N8N     │
-│             │    │             │    │             │    │             │
-│ • Envia     │    │ • Recebe    │    │ • Processa  │    │ • IA        │
-│   mensagem  │    │   webhook   │    │   webhook   │    │   responde  │
-│ • WhatsApp  │    │ • Envia     │    │ • Verifica  │    │ • Personaliza│
-│   Business  │    │   para API  │    │   bot ativo │    │   resposta  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-                                                              │
-                                                              ▼
-                                                   ┌─────────────┐
-                                                   │   KOMMO     │
-                                                   │             │
-                                                   │ • Cria nota │
-                                                   │ • Atualiza  │
-                                                   │   lead      │
-                                                   └─────────────┘
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐
+│ FORMULÁRIO  │───►│   PYTHON    │───►│     N8N     │───►│   WHATSAPP + KOMMO      │
+│             │    │             │    │             │    │                         │
+│ • RD Station│    │ • Distribui │    │ • IA cria   │    │ • Envia WhatsApp        │
+│ • Site      │    │   por área  │    │   mensagem  │    │ • Cria nota Kommo       │
+│ • Kommo     │    │ • Identifica│    │ • Personaliza│   │ • Tudo automático       │
+│ • Webhook   │    │   vendedor  │    │   por área  │    │                         │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────────────────┘
+                           │                                           │
+                           └─────────── COORDENA ─────────────────────┘
+```
+
+## 💬 FLUXO 2: CLIENTE RESPONDE → IA AUTOMÁTICA
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           FLUXO REATIVO SIMPLIFICADO                           │
+│                      (Cliente → IA → Resposta Automática)                     │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────────────────┐
+│   CLIENTE   │───►│   KOMMO     │───►│   PYTHON    │───►│          N8N            │
+│             │    │             │    │             │    │                         │
+│ • WhatsApp  │    │ • Recebe    │    │ • Identifica│    │ • IA processa           │
+│   mensagem  │    │ • Webhook   │    │   vendedor  │    │ • Gera resposta         │
+│ • Texto     │    │ • Envia     │    │ • Coordena  │    │ • Envia WhatsApp        │
+│   livre     │    │   para API  │    │   fluxo     │    │ • Cria nota Kommo       │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────────────────┘
+                                             │                        │
+                                             └─── COORDENA ──────────┘
 ```
 
 ## 🤖 CONTROLE DE BOT (Vendedor assume)
