@@ -480,48 +480,21 @@ async def receber_distribuicao_lead(distribuicao: DistribuicaoPayload):
 
 @app.post("/send-response")
 async def receive_n8n_response(response_data: N8nResponse):
-    """Recebe resposta do n8n e envia de volta para processar nota + WhatsApp"""
+    """Recebe resposta do n8n - FINAL DO FLUXO (SEM LOOP)"""
     try:
-        logger.info(f"Resposta do n8n recebida: {response_data.conversation_id}")
+        logger.info(f"✅ Resposta do n8n recebida: {response_data.conversation_id}")
+        logger.info(f"🤖 Resposta da IA: {response_data.response_text}")
         
-        # Simplificado: Sempre envia para n8n processar (criar nota + enviar WhatsApp)
-        # N8N tem permissões corretas e é especializado nisso
+        # CORRIGIDO: Não reenviar para n8n - apenas logar e confirmar recebimento
+        # Isso evita o loop infinito
         
-        # Extrair lead_id para envio
-        parts = response_data.conversation_id.split("_")
-        lead_id = None
-        if len(parts) >= 3 and parts[-1].isdigit():
-            lead_id = parts[-1]
-        elif len(parts) >= 2 and parts[1].isdigit():
-            lead_id = parts[1]
-        
-        # Preparar payload para n8n processar tudo
-        payload = {
-            "action": "create_note_and_send",
+        return {
+            "success": True,
+            "message": "Resposta recebida e processada (sem loop)",
             "conversation_id": response_data.conversation_id,
             "response_text": response_data.response_text,
-            "response_type": response_data.response_type,
-            "confidence": getattr(response_data, 'confidence', 1.0),
-            "lead_id": lead_id,
-            "method": "n8n_direct",
-            "timestamp": datetime.now().isoformat()
+            "status": "completed"
         }
-        
-        # Enviar para n8n que fará nota + WhatsApp
-        result = await send_to_n8n(payload)
-        
-        if "error" not in result:
-            logger.info("✅ Resposta enviada para n8n processar (nota + WhatsApp)")
-            return {
-                "success": True,
-                "message": "Resposta processada pelo n8n (nota + WhatsApp)",
-                "conversation_id": response_data.conversation_id,
-                "method": "n8n_complete",
-                "n8n_response": result
-            }
-        else:
-            logger.error(f"Erro ao enviar para n8n: {result}")
-            raise HTTPException(status_code=500, detail=f"Erro no n8n: {result.get('error')}")
             
     except Exception as e:
         logger.error(f"Erro ao processar resposta: {e}")
