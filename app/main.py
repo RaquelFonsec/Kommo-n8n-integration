@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 
 # Importar modelos Pydantic
-from app.models.kommo_models import ProactiveStart, DistribuicaoPayload, BotCommand, N8nResponse, VendedorCustom, AgendamentoPayload
+from app.models.kommo_models import ProactiveStart, BotCommand, N8nResponse, VendedorCustom, AgendamentoPayload
 from app.services.kommo_service import KommoService
 
 load_dotenv()
@@ -434,56 +434,16 @@ async def get_vendedores():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/distribuicao/lead")
-async def receber_distribuicao_lead(distribuicao: DistribuicaoPayload):
-    """
-    Recebe distribuição de lead do RD Station/Kommo e inicia conversa proativa
-    """
-    try:
-        logger.info(f"📨 Distribuição recebida: Lead {distribuicao.lead_id} → Vendedor {distribuicao.vendedor_atribuido}")
-        
-        # Converter DistribuicaoPayload para ProactiveStart
-        proactive_data = ProactiveStart(
-            contact_id=distribuicao.contact_id,
-            lead_id=distribuicao.lead_id,
-            vendedor=distribuicao.vendedor_atribuido,
-            area_atuacao=distribuicao.area_atuacao,
-            trigger_type=distribuicao.trigger_type,
-            lead_data=distribuicao.lead_data,
-            custom_message=getattr(distribuicao, 'custom_message', None)
-        )
-        
-        # Iniciar conversa proativa
-        result = await start_proactive_conversation(proactive_data)
-        
-        if result.get("success"):
-            return {
-                "status": "success",
-                "message": "Distribuição processada e conversa proativa iniciada",
-                "lead_id": distribuicao.lead_id,
-                "vendedor": distribuicao.vendedor_atribuido,
-                "conversation_id": result.get("conversation_id"),
-                "timestamp": datetime.now().isoformat()
-            }
-        else:
-            logger.error(f"Erro ao iniciar conversa proativa: {result.get('error')}")
-            return {
-                "status": "error",
-                "message": f"Erro ao iniciar conversa proativa: {result.get('error')}",
-                "lead_id": distribuicao.lead_id,
-                "vendedor": distribuicao.vendedor_atribuido
-            }
-            
-    except Exception as e:
-        logger.error(f"Erro ao processar distribuição: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+# REMOVIDO: Endpoint de distribuição de leads
+# A distribuição automática é feita pelo n8n
+# @app.post("/distribuicao/lead") - REMOVIDO
 
 @app.post("/send-response")
 async def receive_n8n_response(response_data: N8nResponse):
     """Recebe resposta do n8n - FINAL DO FLUXO (SEM LOOP)"""
     try:
-        logger.info(f"✅ Resposta do n8n recebida: {response_data.conversation_id}")
-        logger.info(f"🤖 Resposta da IA: {response_data.response_text}")
+        logger.info(f" Resposta do n8n recebida: {response_data.conversation_id}")
+        logger.info(f" Resposta da IA: {response_data.response_text}")
         
         # CORRIGIDO: Não reenviar para n8n - apenas logar e confirmar recebimento
         # Isso evita o loop infinito

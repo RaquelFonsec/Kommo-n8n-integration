@@ -51,17 +51,8 @@ class ProactiveStart(BaseModel):
     lead_data: Optional[Dict[str, Any]] = Field(None, description="Dados do lead para personalização")
     custom_message: Optional[str] = Field(None, description="Mensagem customizada (opcional)")
 
-class DistribuicaoPayload(BaseModel):
-    """NOVO: Modelo para distribuição automática de leads"""
-    lead_id: int = Field(..., description="ID do lead")
-    contact_id: int = Field(..., description="ID do contato")
-    area_atuacao: str = Field(..., description="Área de atuação do lead")
-    vendedor_atribuido: str = Field(..., description="Vendedor atribuído na distribuição")
-    lead_data: Dict[str, Any] = Field(..., description="Dados completos do lead")
-    fonte_original: str = Field(default="wp_form", description="Fonte original (wp_form, rd_station, kommo_direct)")
-    trigger_proativo: bool = Field(default=True, description="Se deve enviar mensagem proativa")
-    trigger_type: str = Field(default="formulario_preenchido", description="Tipo de gatilho")
-    custom_message: Optional[str] = Field(None, description="Mensagem personalizada")
+# REMOVIDO: DistribuicaoPayload - distribuição automática feita pelo n8n
+# class DistribuicaoPayload(BaseModel): - REMOVIDO
 
 class N8nResponse(BaseModel):
     """CORRIGIDO: Modelo compatível com main.py"""
